@@ -1,0 +1,2 @@
+PORT=5000
+MONGO_URI=mongodb+srv://ltmeridith:QjZh7PaNCT50Q1ZH@trivai.qzjsv.mongodb.net/?retryWrites=true&w=majority&appName=trivai
