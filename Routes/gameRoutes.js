@@ -21,25 +21,8 @@ router.post('/openai', async (req, res) => {
 
 router.post('/create-lobby', async (req, res) => {
   try {
-    const { username } = req.body;
     const newLobbyId = gameState.createLobby();
-    gameState.addPlayerToLobby(newLobbyId, username);
-
     res.json({ success: true, lobbyId: newLobbyId });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.post('/join-lobby', async (req, res) => {
-  try {
-    const { lobbyId, username } = req.body;
-    if (!lobbyId || !username) {
-      return res.status(400).json({ error: 'LobbyId and username are required' });
-    }
-
-    gameState.addPlayerToLobby(lobbyId, username);
-    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
