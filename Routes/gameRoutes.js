@@ -28,4 +28,14 @@ router.post('/create-lobby', async (req, res) => {
   }
 });
 
+router.get('/check-lobby/:lobbyId', (req, res) => {
+  try {
+    const { lobbyId } = req.params;
+    const lobbyExists = gameState.getLobbyState(lobbyId) !== undefined;
+    res.json({ exists: lobbyExists });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

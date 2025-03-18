@@ -50,15 +50,48 @@ const handleWebSocketConnection = (ws) => {
         
         case 'updateScore': {
           const lobbyId = data.lobbyId;
+          gameState.addCorrectPlayer(lobbyId, data.username);
           const lobbyState = gameState.getLobbyState(lobbyId);
           if (lobbyState) {
             const player = lobbyState.players.find(p => p.name === data.username);
             if (player) {
-              player.score += data.score;
+              player.score = player.score + lobbyState.timeLeft;;
               broadcast({ 
                 type: 'playersUpdate', 
-                players: lobbyState.players 
+                players: lobbyState.players,
+                correctPlayers: lobbyState.correctPlayers
               }, lobbyId);
+            }
+          }
+          break;
+        }
+
+        case 'leaveLobby': {
+          const { lobbyId, username, host } = data;
+          const lobby = gameState.getLobbyState(lobbyId);
+          
+          if (lobby) {
+
+            if (host) {
+              gameState.deleteLobby(lobbyId);
+              broadcast({ type: 'lobbyDeleted' }, lobbyId);
+              break;
+            }
+
+            // Remove player from lobby
+            gameState.removePlayerFromLobby(lobbyId, username);
+            const updatedLobby = gameState.getLobbyState(lobbyId);
+            
+            // Notify remaining players
+            broadcast({
+              type: 'playersUpdate',
+              players: updatedLobby.players,
+              correctPlayers: updatedLobby.correctPlayers || []
+            }, lobbyId);
+            
+            // If lobby is empty, reset it
+            if (updatedLobby.players.length === 0) {
+              gameState.deleteLobby(lobbyId);
             }
           }
           break;
