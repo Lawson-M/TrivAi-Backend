@@ -1,7 +1,8 @@
 import gameState from '../Services/gameState.js';
 import { getOpenAIResponse } from '../Services/aiService.js';
 import { broadcast } from '../WebSocket/wsHandler.js';
-import { sleep } from 'openai/core.mjs';
+import { addSeenQuestions } from '../Controllers/userController.js';
+import { getSeenQuestionsByUsers } from '../Controllers/questionController.js';
 
 let gameIntervals = {};
 
@@ -52,8 +53,17 @@ const startGame = (lobbyId) => {
 
 const initializeGame = async (prompt, lobbyId) => {
   try {
-    const newQuestionSet = await getOpenAIResponse(prompt);
+
+    const seenQuestions =  await getSeenQuestionsByUsers(gameState.getPlayers(lobbyId), prompt);
+    const {newQuestionSet, questionIds} = await getOpenAIResponse(prompt, seenQuestions);
+
+    if (!questionIds || !newQuestionSet) {
+      throw new Error('Failed to generate questions');
+    }
+
+    await addQuestionToPlayers(lobbyId, questionIds);
     gameState.setQuestionSet(lobbyId, newQuestionSet);
+    
 
     gameState.setCurrentQuestionIndex(lobbyId, 0);
     gameState.setTimeLeft(lobbyId, 20);
@@ -77,5 +87,16 @@ const stopGame = (lobbyId) => {
   clearInterval(gameIntervals[lobbyId]);
   delete gameIntervals[lobbyId];
 };
+
+const addQuestionToPlayers = async (lobbyId, questoinIds) => {
+  const players = gameState.getPlayers(lobbyId);
+  players.forEach(player => {
+      addSeenQuestions(player.name, questoinIds).then(() => {
+      console.log(`Questions added to player ${player.name}`);
+    }).catch(err => {
+      console.error(`Error adding questions to player ${player.name}:`, err);
+    });
+  });
+}
 
 export { startGame, initializeGame, stopGame };

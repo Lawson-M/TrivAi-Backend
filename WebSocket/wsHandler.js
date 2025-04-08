@@ -39,7 +39,7 @@ const handleWebSocketConnection = (ws) => {
           if (lobby) {
             ws.lobbyId = data.lobbyId;
             ws.username = data.username;
-            gameState.addPlayerToLobby(data.lobbyId, data.username);
+            gameState.addPlayerToLobby(data.lobbyId, data.username, data.isGuest);
             ws.send(JSON.stringify({ type: 'joinedLobby', lobbyId: data.lobbyId }));
             broadcast({type: 'playersUpdate', players: lobby.players}, data.lobbyId);
           } else {

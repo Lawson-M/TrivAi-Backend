@@ -31,9 +31,9 @@ class GameState {
       this.lobbies[lobbyId].correctPlayers = [];
     }
   
-    addPlayerToLobby(lobbyId, username) {
+    addPlayerToLobby(lobbyId, username, isGuest) {
       if (this.lobbies[lobbyId]) {
-        this.lobbies[lobbyId].players.push({ name: username, score: 0 });
+        this.lobbies[lobbyId].players.push({ name: username, score: 0, isGuest: isGuest });
       }
     }
   
