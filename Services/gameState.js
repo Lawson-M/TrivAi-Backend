@@ -9,20 +9,37 @@ class GameState {
         players: [],
         currentQuestionIndex: 0,
         timeLeft: 20,
-        questionSet: []
+        questionSet: [],
+        correctPlayers: []
       };
       return newLobbyId;
     }
-  
-    addPlayerToLobby(lobbyId, username) {
+
+    deleteLobby(lobbyId) {
       if (this.lobbies[lobbyId]) {
-        this.lobbies[lobbyId].players.push({ name: username, score: 0 });
+        delete this.lobbies[lobbyId];
+        return true;
+      }
+      return false;
+    }
+
+    addCorrectPlayer(lobbyId, player) {
+      this.lobbies[lobbyId].correctPlayers.push(player);
+    }
+
+    clearCorrectPlayers(lobbyId) {
+      this.lobbies[lobbyId].correctPlayers = [];
+    }
+  
+    addPlayerToLobby(lobbyId, username, isGuest) {
+      if (this.lobbies[lobbyId]) {
+        this.lobbies[lobbyId].players.push({ name: username, score: 0, isGuest: isGuest });
       }
     }
   
-    removePlayerFromLobby(lobbyId, player) {
+    removePlayerFromLobby(lobbyId, username) {
       if (this.lobbies[lobbyId]) {
-        this.lobbies[lobbyId].players = this.lobbies[lobbyId].players.filter(p => p !== player);
+        this.lobbies[lobbyId].players = this.lobbies[lobbyId].players.filter(p => p.name !== username);
       }
     }
   
