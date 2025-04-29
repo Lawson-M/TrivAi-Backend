@@ -10,7 +10,8 @@ class GameState {
         currentQuestionIndex: 0,
         timeLeft: 20,
         questionSet: [],
-        correctPlayers: []
+        correctPlayers: [],
+        timerLimit: 20,
       };
       return newLobbyId;
     }
@@ -54,7 +55,7 @@ class GameState {
     resetGame(lobbyId) {
       this.lobbies[lobbyId].players = [];
       this.lobbies[lobbyId].currentQuestionIndex = 0;
-      this.lobbies[lobbyId].timeLeft = 20;
+      this.lobbies[lobbyId].timeLeft = this.lobbies[lobbyId].timerLimit;
       this.lobbies[lobbyId].questionSet = [];
     }
   
@@ -80,6 +81,15 @@ class GameState {
   
     setQuestionSet(lobbyId, newQuestionSet) {
       this.lobbies[lobbyId].questionSet = newQuestionSet;
+    }
+
+    setTimerLimit(lobbyId, chosenLimit) {
+      this.lobbies[lobbyId].timerLimit = chosenLimit;
+      this.lobbies[lobbyId].timeLeft = chosenLimit;
+    }
+
+    getTimerLimit(lobbyId) {
+      return this.lobbies[lobbyId].timerLimit;
     }
   }
   

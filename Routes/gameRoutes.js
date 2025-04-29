@@ -6,12 +6,12 @@ const router = express.Router();
 
 router.post('/openai', async (req, res) => {
   try {
-    const { prompt, lobbyId } = req.body;
+    const { prompt, lobbyId, questionCount, timerLimit, aiModel, preventReuse, allowImages } = req.body;
     if (!prompt || !lobbyId) {
       return res.status(400).json({ error: 'Prompt and LobbyId are required' });
     }
 
-    await initializeGame(prompt, lobbyId);
+    await initializeGame(prompt, lobbyId, questionCount, timerLimit, aiModel, preventReuse, allowImages);
     res.json({ success: true, message: 'Game started' });
 
   } catch (error) {

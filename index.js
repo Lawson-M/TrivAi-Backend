@@ -13,8 +13,8 @@ app.use(cors());
 
 connectDB().catch(console.dir);
 
-app.use('/auth', authRoutes);
-app.use('/game', aiRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/game', aiRoutes);
  
 const PORT = config.PORT;
 const server = app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

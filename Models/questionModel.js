@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const questionSchema = new mongoose.Schema({
   prompt: { type: String, required: true },
   question: { type: String, required: true },
-  answer: { type: String, required: true },
+  answer: { type: Array, required: true },
   created_at: { type: Date, default: Date.now }
 });
 
