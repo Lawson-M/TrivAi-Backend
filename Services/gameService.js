@@ -2,7 +2,7 @@ import gameState from '../Services/gameState.js';
 import { getOpenAIResponse } from '../Services/aiService.js';
 import { broadcast } from '../WebSocket/wsHandler.js';
 import { addSeenQuestions } from '../Controllers/userController.js';
-import { getSeenQuestionsByUsers } from '../Controllers/questionController.js';
+import { getSeenQuestionsByUsers, getQuestionsForPrompt } from '../Controllers/questionController.js';
 
 let gameIntervals = {};
 
@@ -19,8 +19,11 @@ const handleTimeUp = (lobbyId) => {
     gameState.clearCorrectPlayers(lobbyId);
     const nextIndex = gameState.getCurrentQuestionIndex(lobbyId) + 1;
     if (nextIndex < gameState.getQuestionSet(lobbyId).length) {
+      
+      gameState.setTimeLeft(lobbyId, gameState.getTimerLimit(lobbyId));
+
       gameState.setCurrentQuestionIndex(lobbyId, nextIndex);
-      gameState.setTimeLeft(lobbyId, 20);
+
       broadcast({
         type: 'nextQuestion',
         question: gameState.getQuestionSet(lobbyId)[nextIndex]
@@ -51,11 +54,37 @@ const startGame = (lobbyId) => {
   }, 1000);
 };
 
-const initializeGame = async (prompt, lobbyId) => {
+const initializeGame = async (prompt, lobbyId, questionCount, chosenTimer, aiModel, preventReuse, allowImages) => {
   try {
+    gameState.setTimerLimit(lobbyId, chosenTimer);
 
-    const seenQuestions =  await getSeenQuestionsByUsers(gameState.getPlayers(lobbyId), prompt);
-    const {newQuestionSet, questionIds} = await getOpenAIResponse(prompt, seenQuestions);
+    const currentActivePlayers = gameState.getPlayers(lobbyId);
+    let newQuestionSet = [];
+    let questionIds = [];
+
+    const unusedQuestions = await getQuestionsForPrompt(prompt, currentActivePlayers, 5);
+
+    // Format unused questions to match AI response structure
+    if (unusedQuestions.length > 0) {
+      newQuestionSet = unusedQuestions.map(question => ({
+        question: question.question,
+        answer: Array.isArray(question.answer) ? question.answer : [question.answer]
+      }));
+      questionIds = unusedQuestions.map(question => question._id);
+    }
+
+    // Get additional questions from AI if needed
+    if (unusedQuestions.length < questionCount) {
+      const seenQuestions = await getSeenQuestionsByUsers(currentActivePlayers, prompt);
+      const aiResponse = await getOpenAIResponse(prompt, seenQuestions, (questionCount - unusedQuestions.length), aiModel);
+
+
+      newQuestionSet = [...newQuestionSet, ...aiResponse.newQuestionSet];
+      questionIds = [...questionIds, ...aiResponse.questionIds];
+
+    }
+
+    console.log('New question set:', newQuestionSet);
 
     if (!questionIds || !newQuestionSet) {
       throw new Error('Failed to generate questions');
@@ -66,14 +95,13 @@ const initializeGame = async (prompt, lobbyId) => {
     
 
     gameState.setCurrentQuestionIndex(lobbyId, 0);
-    gameState.setTimeLeft(lobbyId, 20);
     gameState.clearCorrectPlayers(lobbyId);
   
     broadcast({ 
       type: 'gameStarted',
       question: gameState.getQuestionSet(lobbyId)[0],
       timeLeft: gameState.getTimeLeft(lobbyId),
-      players: gameState.getPlayers(lobbyId)
+      players: currentActivePlayers
     }, lobbyId);
 
     startGame(lobbyId);

@@ -2,8 +2,32 @@ import gameState from '../Services/gameState.js';
 import WebSocket from 'ws';
 
 let wss;
+const HEARTBEAT_INTERVAL = 30000; // 30 seconds
+const HEARTBEAT_TIMEOUT = 10000; // 10 seconds
+let heartbeatInterval = {};
+
 const setWebSocketServer = (webSocketServer) => {
   wss = webSocketServer;
+
+  heartbeatInterval = setInterval(() => {
+    wss.clients.forEach(client => {
+
+      client.isAlive = false; // Reset isAlive status
+      client.send(JSON.stringify({ type: 'heartbeat' }));
+      
+      if (client.heartbeatTimeout) {
+        clearTimeout(client.heartbeatTimeout);
+      }
+      
+      client.heartbeatTimeout = setTimeout(() => {
+        if (!client.isAlive) {
+          console.log('[WebSocket] Client did not respond in time');
+          client.terminate();
+        }
+      }, HEARTBEAT_TIMEOUT);
+    });
+  }, HEARTBEAT_INTERVAL);
+
 };
 
 const broadcast = (data, lobbyId) => {
@@ -34,13 +58,19 @@ const handleWebSocketConnection = (ws) => {
       console.log('[WebSocket] Received message:', data);
 
       switch (data.type) {
+
+        case 'heartbeat': {
+          ws.isAlive = true;
+          console.log('[WebSocket] Client is awake');
+          break;
+        }
+
         case 'joinLobby': {
           const lobby = gameState.getLobbyState(data.lobbyId);
           if (lobby) {
             ws.lobbyId = data.lobbyId;
             ws.username = data.username;
             gameState.addPlayerToLobby(data.lobbyId, data.username, data.isGuest);
-            ws.send(JSON.stringify({ type: 'joinedLobby', lobbyId: data.lobbyId }));
             broadcast({type: 'playersUpdate', players: lobby.players}, data.lobbyId);
           } else {
             ws.send(JSON.stringify({ type: 'error', message: 'Lobby not found' }));
